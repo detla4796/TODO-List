@@ -1,0 +1,36 @@
+.task-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+  border: 1px solid #dee2e6;
+}
+
+.task-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.task-card p {
+  margin: 0.25rem 0;
+  color: #666;
+}
+
+.task-card button {
+  margin: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.task-card button:first-of-type {
+  background: #4CAF50;
+  color: white;
+}
+
+.task-card button:last-of-type {
+  background: #f44336;
+  color: white;
+}
