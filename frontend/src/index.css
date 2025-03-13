@@ -109,7 +109,6 @@ button:hover {
   background-color: #862dc1;
 }
 
-/* Контейнер для задач */
 .tasks-container {
   display: flex;
   flex-wrap: wrap;
@@ -117,7 +116,6 @@ button:hover {
   justify-content: center;
 }
 
-/* Карточка задачи */
 .task-card {
   background: white;
   border: 1px solid #ddd;

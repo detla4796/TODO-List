@@ -91,7 +91,7 @@ app.post('/api/auth', async (req, res) => {
         id: user.id,
         name: user.name,
         surname: user.surname,
-        patronymic: user.patronymic, // Добавляем ФИО!
+        patronymic: user.patronymic,
         login: user.login,
         role: user.role
       }
@@ -105,21 +105,18 @@ app.post('/api/users', async (req, res) => {
   try {
     const { login, password, name, surname, patronymic, role, leaderId } = req.body;
 
-    // Validation
     if (!login || !password || !name || !surname || !role) {
       return res.status(400).json({ 
         error: 'Необходимо заполнить обязательные поля' 
       });
     }
 
-    // Validate leader if user is not a leader
     if (role === 'user' && !leaderId) {
       return res.status(400).json({ 
         error: 'Необходимо выбрать руководителя' 
       });
     }
 
-    // Check if user exists
     const existingUser = await User.findOne({ where: { login } });
     if (existingUser) {
       return res.status(400).json({ 
@@ -127,10 +124,8 @@ app.post('/api/users', async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await User.create({
       login,
       password: hashedPassword,
@@ -141,7 +136,6 @@ app.post('/api/users', async (req, res) => {
       leaderId: role === 'user' ? leaderId : null
     });
 
-    // Generate token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
@@ -170,9 +164,6 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-/**
- * Получение всех пользователей (для отладки)
- */
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.findAll({
@@ -186,9 +177,6 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-/**
- * Получение списка подчинённых текущего пользователя.
- */
 app.get('/api/users/subordinates', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -211,10 +199,9 @@ app.get('/api/users/subordinates', async (req, res) => {
 
 app.post('/api/tasks', async (req, res) => {
   try {
-    console.log('Received task data:', req.body); // Add logging
+    console.log('Received task data:', req.body);
     const { title, description, priority, status, deadline, userId } = req.body;
     
-    // Log all values
     console.log({
       title,
       description,
@@ -241,7 +228,6 @@ app.post('/api/tasks', async (req, res) => {
       });
     }
 
-    // Validate status value
     const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({ 
@@ -251,7 +237,6 @@ app.post('/api/tasks', async (req, res) => {
       });
     }
 
-    // Validate priority value
     const validPriorities = ['high', 'medium', 'low'];
     if (priority && !validPriorities.includes(priority)) {
       return res.status(400).json({ 
@@ -271,7 +256,7 @@ app.post('/api/tasks', async (req, res) => {
       createdBy: currentUser.id
     });
 
-    console.log('Task created successfully:', task); // Add logging
+    console.log('Task created successfully:', task);
     res.status(201).json(task);
   } catch (error) {
     console.error('Detailed error:', {
@@ -301,21 +286,17 @@ app.get('/api/tasks', async (req, res) => {
     let tasks;
 
     if (currentUser.role === 'leader') {
-      // Находим всех подчинённых
       const subordinates = await User.findAll({
         where: { leaderId: currentUser.id },
-        attributes: ['id'] // Получаем только ID подчинённых
+        attributes: ['id']
       });
 
-      const subordinateIds = subordinates.map(user => user.id); // Извлекаем ID
-      subordinateIds.push(currentUser.id); // Добавляем самого руководителя
-
-      // Получаем все задачи для руководителя и его подчинённых
+      const subordinateIds = subordinates.map(user => user.id);
+      subordinateIds.push(currentUser.id);
       tasks = await Task.findAll({
         where: { userId: subordinateIds }
       });
     } else {
-      // Если подчинённый – получает только свои задачи
       tasks = await Task.findAll({ where: { userId: currentUser.id } });
     }
 
@@ -332,7 +313,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
     if (!authHeader) return res.status(401).json({ error: 'Authorization header missing' });
 
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.JWT_SECRET); // Проверяем токен
+    jwt.verify(token, process.env.JWT_SECRET);
 
     const { id } = req.params;
     const task = await Task.findByPk(id);
@@ -348,13 +329,11 @@ app.delete('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// Add this endpoint after your other task routes
 app.put('/api/tasks/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, status, deadline, userId } = req.body;
 
-    // Verify authentication
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Authorization header missing' });
 
@@ -364,18 +343,14 @@ app.put('/api/tasks/:id', async (req, res) => {
 
     if (!currentUser) return res.status(404).json({ error: 'Current user not found' });
 
-    // Find the task
     const task = await Task.findByPk(id);
     if (!task) return res.status(404).json({ error: 'Task not found' });
 
-    // Check permissions
     const canEditAllFields = task.createdBy === currentUser.id || currentUser.role === 'leader';
 
     if (!canEditAllFields && task.status !== status) {
-      // If user can only edit status, update only that
       await task.update({ status });
     } else if (canEditAllFields) {
-      // Full update for task creator or leader
       await task.update({
         title,
         description,
@@ -396,9 +371,6 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// Add this before app.listen()
-
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
   res.status(500).json({
@@ -407,7 +379,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// CORS error handler
 app.use((req, res, next) => {
   res.status(404).json({
     error: 'Not Found',
@@ -415,9 +386,6 @@ app.use((req, res, next) => {
   });
 });
 
-/**
- * Синхронизация базы данных и запуск сервера.
- */
 sequelize.sync()
   .then(() => {
     console.log('Database synchronized');

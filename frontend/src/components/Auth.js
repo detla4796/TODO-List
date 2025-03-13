@@ -15,7 +15,6 @@ const Auth = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
 
-  // Fetch leaders for the dropdown
   useEffect(() => {
     if (!isLogin) {
       fetchLeaders();
